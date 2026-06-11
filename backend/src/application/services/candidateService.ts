@@ -1,8 +1,22 @@
+import { PrismaClient } from '@prisma/client';
 import { Candidate } from '../../domain/models/Candidate';
 import { validateCandidateData } from '../validator';
 import { Education } from '../../domain/models/Education';
 import { WorkExperience } from '../../domain/models/WorkExperience';
 import { Resume } from '../../domain/models/Resume';
+
+const prisma = new PrismaClient();
+
+export interface UpdateStageInput {
+    applicationId: number;
+    newInterviewStep: number;
+}
+
+export interface UpdateStageResult {
+    applicationId: number;
+    candidateId: number;
+    currentInterviewStep: number;
+}
 
 export const addCandidate = async (candidateData: any) => {
     try {
@@ -56,10 +70,52 @@ export const addCandidate = async (candidateData: any) => {
 
 export const findCandidateById = async (id: number): Promise<Candidate | null> => {
     try {
-        const candidate = await Candidate.findOne(id); // Cambio aquí: pasar directamente el id
+        const candidate = await Candidate.findOne(id);
         return candidate;
     } catch (error) {
         console.error('Error al buscar el candidato:', error);
         throw new Error('Error al recuperar el candidato');
     }
+};
+
+export const updateApplicationStage = async (
+    candidateId: number,
+    input: UpdateStageInput,
+    client: Pick<PrismaClient, 'candidate' | 'application' | 'interviewStep'> = prisma
+): Promise<UpdateStageResult> => {
+    const candidate = await client.candidate.findUnique({ where: { id: candidateId } });
+    if (!candidate) {
+        throw new Error('Candidate not found');
+    }
+
+    const application = await client.application.findFirst({
+        where: { id: input.applicationId, candidateId },
+        include: {
+            position: { select: { interviewFlowId: true } },
+        },
+    });
+    if (!application) {
+        throw new Error('Application not found for this candidate');
+    }
+
+    const step = await client.interviewStep.findFirst({
+        where: {
+            id: input.newInterviewStep,
+            interviewFlowId: application.position.interviewFlowId,
+        },
+    });
+    if (!step) {
+        throw new Error("Invalid interview step for this position's flow");
+    }
+
+    const updated = await client.application.update({
+        where: { id: input.applicationId },
+        data: { currentInterviewStep: input.newInterviewStep },
+    });
+
+    return {
+        applicationId: updated.id,
+        candidateId: updated.candidateId,
+        currentInterviewStep: updated.currentInterviewStep,
+    };
 };
