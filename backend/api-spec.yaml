@@ -186,3 +186,173 @@ paths:
         '500':
           description: Error during the file upload process
 
+  /positions/{id}/candidates:
+    get:
+      summary: Get candidates in process for a position
+      description: Returns all candidates who have an active application for the given position, including their current interview stage and average score.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the position
+      responses:
+        '200':
+          description: List of candidates in process (empty array if none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    candidateId:
+                      type: integer
+                      description: Unique identifier of the candidate
+                    fullName:
+                      type: string
+                      description: Full name of the candidate (firstName + lastName)
+                    currentInterviewStep:
+                      type: string
+                      description: Name of the current interview step
+                    averageScore:
+                      type: number
+                      nullable: true
+                      description: Average score across all scored interviews; null if no scored interviews exist
+              example:
+                - candidateId: 1
+                  fullName: John Doe
+                  currentInterviewStep: Technical Interview
+                  averageScore: 7.5
+                - candidateId: 2
+                  fullName: Jane Smith
+                  currentInterviewStep: HR Interview
+                  averageScore: null
+        '400':
+          description: Invalid ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid ID format
+        '404':
+          description: Position not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Position not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /candidates/{id}/stage:
+    put:
+      summary: Update candidate interview stage
+      description: Updates the current interview stage for a specific candidate application. The candidateId identifies the candidate in the path; applicationId in the body identifies the specific application (a candidate can have multiple applications for different positions).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the candidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationId
+                - newInterviewStep
+              properties:
+                applicationId:
+                  type: integer
+                  description: ID of the application to update (must belong to the candidate)
+                newInterviewStep:
+                  type: integer
+                  description: ID of the new InterviewStep (must belong to the position's InterviewFlow)
+            example:
+              applicationId: 3
+              newInterviewStep: 5
+      responses:
+        '200':
+          description: Stage updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      applicationId:
+                        type: integer
+                      candidateId:
+                        type: integer
+                      currentInterviewStep:
+                        type: integer
+                        description: ID of the updated interview step
+              example:
+                message: Stage updated successfully
+                data:
+                  applicationId: 3
+                  candidateId: 1
+                  currentInterviewStep: 5
+        '400':
+          description: Invalid path parameter, missing/invalid body field, or interview step not valid for this position's flow
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCandidateId:
+                  value:
+                    error: Invalid candidate ID format
+                missingApplicationId:
+                  value:
+                    error: applicationId is required and must be a positive integer
+                missingNewInterviewStep:
+                  value:
+                    error: newInterviewStep is required and must be a positive integer
+                invalidStep:
+                  value:
+                    error: "Invalid interview step for this position's flow"
+        '404':
+          description: Candidate or application not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                candidateNotFound:
+                  value:
+                    error: Candidate not found
+                applicationNotFound:
+                  value:
+                    error: Application not found for this candidate
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+

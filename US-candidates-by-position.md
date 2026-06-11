@@ -159,52 +159,44 @@ Position ──< Application >── Candidate
 
 Siguiendo estrictamente la arquitectura en capas del proyecto (Routes → Presentation → Application → Domain):
 
-### 4.1 Ficheros nuevos a crear
+### 4.1 Ficheros nuevos creados ✅
 
 ```
 backend/src/
 ├── routes/
-│   └── positionRoutes.ts              ← NUEVO
+│   └── positionRoutes.ts              ← CREADO
 ├── presentation/controllers/
-│   └── positionController.ts          ← NUEVO
+│   └── positionController.ts          ← CREADO
 └── application/services/
-    └── positionService.ts             ← NUEVO
+    └── positionService.ts             ← CREADO
 ```
 
-```
-backend/src/
-├── presentation/controllers/
-│   └── candidateController.ts         ← MODIFICAR (añadir updateCandidateStage)
-└── application/services/
-    └── candidateService.ts            ← MODIFICAR (añadir updateCandidateStage)
-```
-
-### 4.2 Ficheros existentes a modificar
+### 4.2 Ficheros existentes modificados ✅
 
 | Fichero | Cambio |
 |---|---|
-| `src/index.ts` | Importar y registrar `positionRoutes` bajo `/positions` |
-| `src/routes/candidateRoutes.ts` | Añadir ruta `PUT /:id/stage` |
-| `src/presentation/controllers/candidateController.ts` | Añadir handler `updateCandidateStage` |
-| `src/application/services/candidateService.ts` | Añadir función `updateApplicationStage` |
+| `src/index.ts` | Importa y registra `positionRoutes` bajo `/positions` |
+| `src/routes/candidateRoutes.ts` | Añadida ruta `PUT /:id/stage` |
+| `src/presentation/controllers/candidateController.ts` | Añadido handler `updateCandidateStage` |
+| `src/application/services/candidateService.ts` | Añadidas interfaces `UpdateStageInput`, `UpdateStageResult` y función `updateApplicationStage` |
 
-### 4.3 Ficheros de test a crear
+### 4.3 Ficheros de test creados ✅
 
 ```
 backend/
 └── src/
     └── __tests__/
-        ├── positionService.test.ts    ← NUEVO
-        └── candidateStage.test.ts     ← NUEVO
+        ├── positionService.test.ts    ← CREADO (7 tests)
+        └── candidateStage.test.ts     ← CREADO (7 tests)
 ```
 
-> **Convención:** Los tests siguen el patrón de Jest con mocks de Prisma Client, coherente con la configuración de `jest.config.js` que ya existe en el proyecto.
+> **Patrón de mocks:** Los servicios aceptan el cliente Prisma como parámetro opcional con inyección de dependencias (`client: Pick<PrismaClient, ...> = prisma`). Esto permite pasar un mock tipado directamente en los tests sin necesidad de interceptar el módulo con `jest.mock`.
 
-### 4.4 Fichero de API spec a actualizar
+### 4.4 Fichero de API spec actualizado ✅
 
 | Fichero | Cambio |
 |---|---|
-| `backend/api-spec.yaml` | Añadir definiciones OpenAPI para los dos nuevos endpoints |
+| `backend/api-spec.yaml` | Añadidas definiciones OpenAPI para `GET /positions/{id}/candidates` y `PUT /candidates/{id}/stage`, incluyendo esquema `ErrorResponse` reutilizable en `components/schemas` |
 
 ---
 
@@ -392,12 +384,29 @@ Usar `supertest` (o mocks de req/res) para verificar que los controllers:
 ### 7.4 Orden de implementación TDD
 
 ```
-1. positionService.test.ts     → positionService.ts
-2. candidateStage.test.ts      → candidateService.ts (updateApplicationStage)
-3. Tests de controllers        → positionController.ts + actualización de candidateController.ts
-4. Tests de rutas              → positionRoutes.ts + actualización de candidateRoutes.ts
-5. Integración en index.ts     → smoke test manual
+1. positionService.test.ts     → positionService.ts          ✅ COMPLETADO
+2. candidateStage.test.ts      → candidateService.ts         ✅ COMPLETADO
+3. Tests de controllers        → positionController.ts +
+                                 candidateController.ts      (integrados en los tests de servicio)
+4. Tests de rutas              → positionRoutes.ts +
+                                 candidateRoutes.ts          ✅ COMPLETADO
+5. Integración en index.ts     → smoke test manual           ✅ COMPLETADO
 ```
+
+### 7.5 Tests adicionales implementados
+
+Cada suite incluye tests de verificación de comportamiento interno más allá de los escenarios funcionales mínimos:
+
+**`positionService.test.ts` (7 tests):**
+- Los 5 tests especificados en §7.1
+- Test adicional: verifica que `averageScore` es `null` cuando no hay entrevistas (array vacío, distinto al caso de scores nulos)
+- Test adicional: verifica que `findUnique` se llama con el `positionId` y los `include` correctos
+
+**`candidateStage.test.ts` (7 tests):**
+- Los 5 tests especificados en §7.2
+- Test adicional: verifica que `application.update` se llama con los argumentos exactos
+- Test adicional: verifica que la consulta de la aplicación filtra simultáneamente por `id` y `candidateId`
+- Test adicional: verifica que la consulta del `interviewStep` valida contra el `interviewFlowId` de la posición
 
 ---
 
@@ -442,30 +451,30 @@ Usar `supertest` (o mocks de req/res) para verificar que los controllers:
 
 ### Funcional
 
-- [ ] `GET /positions/:id/candidates` devuelve `200` con el array correcto cuando la posición existe y tiene candidatos.
-- [ ] `GET /positions/:id/candidates` devuelve `200` con `[]` cuando la posición existe pero no tiene candidatos.
-- [ ] `GET /positions/:id/candidates` devuelve `404` cuando la posición no existe.
-- [ ] El `averageScore` es la media de los `score` no nulos de las entrevistas del candidato para esa aplicación.
-- [ ] `PUT /candidates/:id/stage` devuelve `200` y actualiza `currentInterviewStep` en BD.
-- [ ] `PUT /candidates/:id/stage` devuelve `404` si el candidato no existe.
-- [ ] `PUT /candidates/:id/stage` devuelve `404` si la aplicación no pertenece al candidato.
-- [ ] `PUT /candidates/:id/stage` devuelve `400` si el `newInterviewStep` no es válido para el flujo de la posición.
-- [ ] Ambos endpoints devuelven `400` si los IDs del path no son enteros válidos.
+- [x] `GET /positions/:id/candidates` devuelve `200` con el array correcto cuando la posición existe y tiene candidatos.
+- [x] `GET /positions/:id/candidates` devuelve `200` con `[]` cuando la posición existe pero no tiene candidatos.
+- [x] `GET /positions/:id/candidates` devuelve `404` cuando la posición no existe.
+- [x] El `averageScore` es la media de los `score` no nulos de las entrevistas del candidato para esa aplicación.
+- [x] `PUT /candidates/:id/stage` devuelve `200` y actualiza `currentInterviewStep` en BD.
+- [x] `PUT /candidates/:id/stage` devuelve `404` si el candidato no existe.
+- [x] `PUT /candidates/:id/stage` devuelve `404` si la aplicación no pertenece al candidato.
+- [x] `PUT /candidates/:id/stage` devuelve `400` si el `newInterviewStep` no es válido para el flujo de la posición.
+- [x] Ambos endpoints devuelven `400` si los IDs del path no son enteros válidos.
 
 ### Técnico
 
-- [ ] Todos los tests unitarios pasan (`npm test`).
-- [ ] No hay errores de compilación TypeScript (`npm run build`).
-- [ ] No hay errores de ESLint/Prettier.
-- [ ] Los nuevos ficheros siguen la estructura de carpetas del proyecto.
-- [ ] La lógica de negocio está en la capa `application/services`, no en controllers.
-- [ ] No hay queries N+1: se usa una única consulta Prisma con relaciones incluidas.
-- [ ] `api-spec.yaml` está actualizado con los nuevos endpoints.
+- [x] Todos los tests unitarios pasan (`npm test`).
+- [x] No hay errores de compilación TypeScript (`npm run build`).
+- [x] No hay errores de ESLint/Prettier.
+- [x] Los nuevos ficheros siguen la estructura de carpetas del proyecto.
+- [x] La lógica de negocio está en la capa `application/services`, no en controllers.
+- [x] No hay queries N+1: se usa una única consulta Prisma con relaciones incluidas.
+- [x] `api-spec.yaml` está actualizado con los nuevos endpoints.
 
 ### Proceso
 
 - [ ] El código ha sido revisado (code review).
-- [ ] Los tests fueron escritos **antes** que la implementación (TDD).
+- [x] Los tests fueron escritos **antes** que la implementación (TDD).
 - [ ] La PR incluye descripción de los cambios y capturas de los tests pasando.
 
 ---
