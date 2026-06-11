@@ -473,9 +473,9 @@ Cada suite incluye tests de verificación de comportamiento interno más allá d
 
 ### Proceso
 
-- [ ] El código ha sido revisado (code review).
+- [x] El código ha sido revisado (code review).
 - [x] Los tests fueron escritos **antes** que la implementación (TDD).
-- [ ] La PR incluye descripción de los cambios y capturas de los tests pasando.
+- [x] La PR incluye descripción de los cambios y capturas de los tests pasando.
 
 ---
 

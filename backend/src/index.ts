@@ -37,6 +37,11 @@ app.use(cors({
   credentials: true
 }));
 
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
 // Import and use candidateRoutes
 app.use('/candidates', candidateRoutes);
 
@@ -45,11 +50,6 @@ app.use('/positions', positionRoutes);
 
 // Route for file uploads
 app.post('/upload', uploadFile);
-
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
-});
 
 const port = 3010;
 

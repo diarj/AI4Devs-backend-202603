@@ -33,3 +33,7 @@ Analiza la arquitectura del proyecto y la estructura de la base de datos y gener
 # Prompt 2
 
 Implementa la historia de usuario @US-candidates-by-position.md
+
+# Prompt 3
+
+Realiza la revisión del código y actualiza la documentación relevante de acuerdo con los cambios implementados.

@@ -49,7 +49,7 @@ export const getCandidatesByPosition = async (
         return {
             candidateId: app.candidate.id,
             fullName: `${app.candidate.firstName} ${app.candidate.lastName}`,
-            currentInterviewStep: app.interviewStep.name,
+            currentInterviewStep: app.interviewStep?.name ?? '',
             averageScore,
         };
     });

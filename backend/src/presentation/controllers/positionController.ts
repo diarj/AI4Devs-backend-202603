@@ -15,8 +15,8 @@ export const getCandidatesByPositionController = async (req: Request, res: Respo
             if (error.message === 'Position not found') {
                 return res.status(404).json({ error: error.message });
             }
-            return res.status(400).json({ error: error.message });
         }
+        console.error(error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
